@@ -20,6 +20,9 @@ namespace ChatApplicationDemo.Controllers
         private readonly IUserBL UserBl;
         private readonly IConfiguration _configuration;
 
+        //Instance of Sender class
+        Sender sender = new Sender();
+
         //Constructor 
         public ChatappController(IUserBL UserBl, IConfiguration _configuration)
         {
@@ -37,12 +40,10 @@ namespace ChatApplicationDemo.Controllers
                 var data = UserBl.Registration(user);
                 if (data.Email != null)
                 {
-
-                   /* string MSMQ = "\n First Name : " + Convert.ToString(user.FirstName) +
+                    string MSMQ = "\n First Name : " + Convert.ToString(user.FirstName) +
                                     "\n Last Name : " + Convert.ToString(user.LastName) +
-                                    "\n User Role : " + Convert.ToString("Customer") +
                                     "\n Email : " + Convert.ToString(user.Email);
-                    sender.Message(MSMQ);*/
+                    sender.Message(MSMQ);
 
                     return Ok(new { success = true, Message = "registration successfull", Data = data });
                 }
