@@ -1,9 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using BusinessLayer.Interfaces;
 using CommonLayer.UserModel;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 
 namespace ChatApplicationDemo.Controllers
 {
@@ -49,6 +54,78 @@ namespace ChatApplicationDemo.Controllers
             catch (Exception ex)
             {
                 return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        //Method of User Login 
+        [HttpPost]
+        [Route("Login")]
+        public IActionResult UserLogin(UserLogin login)
+        {
+            try
+            {
+                UserDetails data = UserBl.Login(login);
+
+                bool success = false;
+                string message;
+                UserDetails DATA;
+
+                UserDetails Data = new UserDetails()
+                {
+                    UserId = data.UserId,
+                    FirstName = data.FirstName,
+                    LastName = data.LastName,
+                    Email = data.Email,
+                    PhoneNumber = data.PhoneNumber
+                };
+
+                if (data.Email != null)
+                {
+                    string JsonToken = CreateToken(data, "AuthenticateUserRole");
+                    success = true;
+                    message = "Login Successfully";
+                    DATA = Data;
+                    return Ok(new { success, message, DATA, JsonToken });
+                }
+                else
+                {
+                    message = "Enter Valid Email & Password";
+                    //DATA = login;
+                    return NotFound(new { success, message });
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+
+        //Method to create JWT token
+        private string CreateToken(UserDetails responseData, string type)
+        {
+            try
+            {
+                var symmetricSecuritykey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+                var signingCreds = new SigningCredentials(symmetricSecuritykey, SecurityAlgorithms.HmacSha256);
+
+                var claims = new List<Claim>();
+                claims.Add(new Claim(ClaimTypes.Role, "User"));
+                claims.Add(new Claim("Email", responseData.Email.ToString()));
+                claims.Add(new Claim("UserId", responseData.UserId.ToString()));
+                claims.Add(new Claim("TokenType", type));
+                claims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
+
+                var token = new JwtSecurityToken(_configuration["Jwt:Issuer"],
+                    _configuration["Jwt:Issuer"],
+                    claims,
+                    expires: DateTime.Now.AddDays(1),
+                    signingCredentials: signingCreds);
+                return new JwtSecurityTokenHandler().WriteToken(token);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
             }
         }
 

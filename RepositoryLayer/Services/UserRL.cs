@@ -19,6 +19,54 @@ namespace RepositoryLayer.Services
             Configuration = configuration;
         }
 
+        public UserDetails Login(UserLogin user)
+        {
+            UserDetails details = new UserDetails();
+            try
+            {
+                //Connection string declared
+                string connect = Configuration.GetConnectionString("MyConnection");
+
+                //Password encrypted
+                string Password = EncryptedPassword.EncodePasswordToBase64(user.Password);
+
+                using (SqlConnection Connection = new SqlConnection(connect))
+                {
+                    SqlCommand sqlCommand = new SqlCommand("UserLogin", Connection);
+
+                    sqlCommand.CommandType = System.Data.CommandType.StoredProcedure;
+                    sqlCommand.Parameters.AddWithValue("@Email", user.Email);
+                    sqlCommand.Parameters.AddWithValue("@Password", Password);
+
+                    //connection open 
+                    Connection.Open();
+
+                    //read data form the database
+                    SqlDataReader reader = sqlCommand.ExecuteReader();
+
+
+                    //While Loop For Reading status result from SqlDataReader.
+                    while (reader.Read())
+                    {
+                        details.UserId = Convert.ToInt32(reader["id"].ToString());
+                        details.FirstName = reader["FirstName"].ToString();
+                        details.LastName = reader["LastName"].ToString();
+                        details.Email = reader["Email"].ToString();
+                        details.PhoneNumber = reader["PhoneNumber"].ToString();
+                    }
+
+                    //connection close 
+                    Connection.Close();
+
+                }
+                return details;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
         //Method to register user in the dataabase
         public UserDetails Registration(UserRegistration user)
         {
